@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <time.h>
 #include <stdlib.h>
+
 #define N 10000 // thay doi N lan luot la 100, 1000, 10000
 #define MASTER 0
 
