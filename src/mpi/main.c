@@ -450,11 +450,6 @@ int main(int argc, char** argv) {
     printf("\n\n ------ C ------ \n");
     
     
-    
-    //int* C; // NOTE: THIS MUST BE INITIALIZED ELSEWHERE!!!!
-              //       LIKE FROM mul() OR init()
-
-
 
     // ------- MPI -----------------------------------
 
@@ -463,168 +458,158 @@ int main(int argc, char** argv) {
 
     n = new_size;
 
-    if (n <= BREAKPOINT) {
-        // printf("Mul between!\n");
-        // print(A, n);
-        // print(B, n);
 
-        C = mul(A, B, n);
-        // printf("Result ");
-        // print(C, n);
+    // TODO: IMPLEMENT STRASSEN, NOT NORMAL MUL
 
-        // printf("\n");
-        goto End;
-    }
-
-    else {
-        // TODO: IMPLEMENT STRASSEN, NOT NORMAL MUL
-
-        int *A11, *A12, *A21, *A22;
-        int *B11, *B12, *B21, *B22;
-        int *C11, *C12, *C21, *C22;
+    int *A11, *A12, *A21, *A22;
+    int *B11, *B12, *B21, *B22;
+    int *C11, *C12, *C21, *C22;
 
 
 
-        // NOTE: split will calloc A1...C22
-        split(A, n, &A11, &A12, &A21, &A22);
-        split(B, n, &B11, &B12, &B21, &B22);
+    // NOTE: split will calloc A1...C22
+    split(A, n, &A11, &A12, &A21, &A22);
+    split(B, n, &B11, &B12, &B21, &B22);
 
-        // goto End;
+    // goto End;
 
-        // NOTE: 
-        // ----- Strassen main --------------------
-        // Initialize M1...7
+    // NOTE: 
+    // ----- Strassen main --------------------
+    // Initialize M1...7
 
-        /*  M1 = (A11 + A22) * (B11 + B22)
-            M2 = (A21 + A22) * B11
-            M3 = A11 * (B12 - B22)
-            M4 = A22 * (B21 - B11)
-            M5 = (A11 + A12) * B22
-            M6 = (A21 - A11) * (B11 + B12)
-            M7 = (A12 - A22) * (B21 + B22)  */
+    /*  M1 = (A11 + A22) * (B11 + B22)
+        M2 = (A21 + A22) * B11
+        M3 = A11 * (B12 - B22)
+        M4 = A22 * (B21 - B11)
+        M5 = (A11 + A12) * B22
+        M6 = (A21 - A11) * (B11 + B12)
+        M7 = (A12 - A22) * (B21 + B22)  */
 
-        int *M1, *M2, *M3, *M4, *M5, *M6, *M7;
+    int *M1, *M2, *M3, *M4, *M5, *M6, *M7;
 
-        int     *A11_add_A22 = add(A11, A22, n/2),
-                *B11_add_B22 = add(B11, B22, n/2),
-                *A21_add_A22 = add(A21, A22, n/2),
-                *B12_sub_B22 = sub(B12, B22, n/2),
-                *B21_sub_B11 = sub(B21, B11, n/2),
-                *A11_add_A12 = add(A11, A12, n/2),
-                *A21_sub_A11 = sub(A21, A11, n/2),
-                *B11_add_B12 = add(B11, B12, n/2),
-                *A12_sub_A22 = sub(A12, A22, n/2),
-                *B21_add_B22 = add(B21, B22, n/2);
+    int     *A11_add_A22 = add(A11, A22, n/2),
+            *B11_add_B22 = add(B11, B22, n/2),
+            *A21_add_A22 = add(A21, A22, n/2),
+            *B12_sub_B22 = sub(B12, B22, n/2),
+            *B21_sub_B11 = sub(B21, B11, n/2),
+            *A11_add_A12 = add(A11, A12, n/2),
+            *A21_sub_A11 = sub(A21, A11, n/2),
+            *B11_add_B12 = add(B11, B12, n/2),
+            *A12_sub_A22 = sub(A12, A22, n/2),
+            *B21_add_B22 = add(B21, B22, n/2);
 
-        M1 = strassen(A11_add_A22, B11_add_B22, n/2);
-        M2 = strassen(A21_add_A22, B11        , n/2);
-        M3 = strassen(A11        , B12_sub_B22, n/2);
-        M4 = strassen(A22        , B21_sub_B11, n/2);
-        M5 = strassen(A11_add_A12, B22        , n/2);
-        M6 = strassen(A21_sub_A11, B11_add_B12, n/2);
-        M7 = strassen(A12_sub_A22, B21_add_B22, n/2);
+    // TODO: PARALLELIZABLE!!!!
 
-        int     *M1_add_M4 = add(M1, M4, n/2),
-                *M5_sub_M7 = sub(M5, M7, n/2),
-                *M1_sub_M2 = sub(M1, M2, n/2),
-                *M3_add_M6 = add(M3, M6, n/2);
+    M1 = strassen(A11_add_A22, B11_add_B22, n/2);
+    M2 = strassen(A21_add_A22, B11        , n/2);
+    M3 = strassen(A11        , B12_sub_B22, n/2);
+    M4 = strassen(A22        , B21_sub_B11, n/2);
+    M5 = strassen(A11_add_A12, B22        , n/2);
+    M6 = strassen(A21_sub_A11, B11_add_B12, n/2);
+    M7 = strassen(A12_sub_A22, B21_add_B22, n/2);
 
-        /*  C11 = (M1 + M4) - (M5 - M7)
-            C12 = M3 + M5
-            C21 = M2 + M4
-            C22 = (M1 - M2) + (M3 + M6) */
+    // TODO: END PARALLELIZABLE!!!!
 
-        C11 = sub(M1_add_M4, M5_sub_M7, n/2);
-        C12 = add(M3, M5, n/2);
-        C21 = add(M2, M4, n/2);
-        C22 = add(M1_sub_M2, M3_add_M6, n/2);
+    int     *M1_add_M4 = add(M1, M4, n/2),
+            *M5_sub_M7 = sub(M5, M7, n/2),
+            *M1_sub_M2 = sub(M1, M2, n/2),
+            *M3_add_M6 = add(M3, M6, n/2);
 
+    /*  C11 = (M1 + M4) - (M5 - M7)
+        C12 = M3 + M5
+        C21 = M2 + M4
+        C22 = (M1 - M2) + (M3 + M6) */
 
-        // --------------------------------------------
-        // NOTE: printing debug
-        // printf("A "); print(A, n);
-        // printf("B "); print(B, n);
-
-        // printf("A11 "); print(A11, n/2);
-        // printf("A12 "); print(A12, n/2);
-        // printf("A21 "); print(A21, n/2);
-        // printf("A22 "); print(A22, n/2);
-        // printf("B11 "); print(B11, n/2);
-        // printf("B12 "); print(B12, n/2);
-        // printf("B21 "); print(B21, n/2);
-        // printf("B22 "); print(B22, n/2);
-
-        // printf("C11 "); print(C11, n/2);
-        // printf("C12 "); print(C12, n/2);
-        // printf("C21 "); print(C21, n/2);
-        // printf("C22 "); print(C22, n/2);
+    C11 = sub(M1_add_M4, M5_sub_M7, n/2);
+    C12 = add(M3, M5, n/2);
+    C21 = add(M2, M4, n/2);
+    C22 = add(M1_sub_M2, M3_add_M6, n/2);
 
 
-        // -------- Merge --------------
-        //printf("Merging! ");
+    // --------------------------------------------
+    // NOTE: printing debug
+    // printf("A "); print(A, n);
+    // printf("B "); print(B, n);
+
+    // printf("A11 "); print(A11, n/2);
+    // printf("A12 "); print(A12, n/2);
+    // printf("A21 "); print(A21, n/2);
+    // printf("A22 "); print(A22, n/2);
+    // printf("B11 "); print(B11, n/2);
+    // printf("B12 "); print(B12, n/2);
+    // printf("B21 "); print(B21, n/2);
+    // printf("B22 "); print(B22, n/2);
+
+    // printf("C11 "); print(C11, n/2);
+    // printf("C12 "); print(C12, n/2);
+    // printf("C21 "); print(C21, n/2);
+    // printf("C22 "); print(C22, n/2);
+
+
+    // -------- Merge --------------
+    //printf("Merging! ");
+    
+    // NOTE:
+    
+    printf("C11 "); print(C11, n/2);
+    printf("C12 "); print(C12, n/2);
+    printf("C21 "); print(C21, n/2);
+    printf("C22 "); print(C22, n/2);
+
+    //mergeBase(C11, C12, C21, C22, C, n);
+
+        int i, j;
+        int k11 = 0, k12 = 0, k21 = 0, k22 = 0;
+        int quadrant;
         
-        // NOTE:
-        
-        printf("C11 "); print(C11, n/2);
-        printf("C12 "); print(C12, n/2);
-        printf("C21 "); print(C21, n/2);
-        printf("C22 "); print(C22, n/2);
-
-        //mergeBase(C11, C12, C21, C22, C, n);
-
-            int i, j;
-            int k11 = 0, k12 = 0, k21 = 0, k22 = 0;
-            int quadrant;
-            
-            for (i = 0; i < n; i++) {
-                for (j = 0; j < n; j++) {
+        for (i = 0; i < n; i++) {
+            for (j = 0; j < n; j++) {
 
 
-                    quadrant = getQuad(i, j, n);
+                quadrant = getQuad(i, j, n);
 
-                    switch(quadrant) {
-                      case TOP_LEFT:
-                        C[i*n + j] = C11[k11];
-                        k11++;
-                        break;
-                      case TOP_RIGHT:
-                        C[i*n + j] = C12[k12];
-                        k12++;
-                        break;
-                      case BOTTOM_LEFT:
-                        C[i*n + j] = C21[k21];
-                        k21++;
-                        break;
-                      case BOTTOM_RIGHT:
-                        C[i*n + j] = C22[k22];
-                        k22++;
-                        break;
-                    }
+                switch(quadrant) {
+                    case TOP_LEFT:
+                    C[i*n + j] = C11[k11];
+                    k11++;
+                    break;
+                    case TOP_RIGHT:
+                    C[i*n + j] = C12[k12];
+                    k12++;
+                    break;
+                    case BOTTOM_LEFT:
+                    C[i*n + j] = C21[k21];
+                    k21++;
+                    break;
+                    case BOTTOM_RIGHT:
+                    C[i*n + j] = C22[k22];
+                    k22++;
+                    break;
                 }
             }
+        }
 
-        //printf("C "); print(C, n);
+    //printf("C "); print(C, n);
 
 
 
-        // -------- Cleanup ------------
-        // free(A11_add_A22); free(B11_add_B22);
-        // free(A21_add_A22); free(B12_sub_B22);
-        // free(B21_sub_B11); free(A11_add_A12);
-        // free(A21_sub_A11); free(B11_add_B12);
-        // free(A12_sub_A22); free(B21_add_B22);
+    // -------- Cleanup ------------
+    // free(A11_add_A22); free(B11_add_B22);
+    // free(A21_add_A22); free(B12_sub_B22);
+    // free(B21_sub_B11); free(A11_add_A12);
+    // free(A21_sub_A11); free(B11_add_B12);
+    // free(A12_sub_A22); free(B21_add_B22);
 
-        // free(M1); free(M2); free(M3); free(M4); 
-        // free(M5); free(M6); free(M7); 
+    // free(M1); free(M2); free(M3); free(M4); 
+    // free(M5); free(M6); free(M7); 
 
-        // free(M1_add_M4); free(M5_sub_M7);
-        // free(M1_sub_M2); free(M3_add_M6);
+    // free(M1_add_M4); free(M5_sub_M7);
+    // free(M1_sub_M2); free(M3_add_M6);
 
-        // free(A11); free(A12); free(A21); free(A22);
-        // free(B11); free(B12); free(B21); free(B22);
-        // free(C11); free(C12); free(C21); free(C22);
+    // free(A11); free(A12); free(A21); free(A22);
+    // free(B11); free(B12); free(B21); free(B22);
+    // free(C11); free(C12); free(C21); free(C22);
 
-    }
     
     
 End:
