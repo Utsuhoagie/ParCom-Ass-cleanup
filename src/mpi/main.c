@@ -437,9 +437,10 @@ int* strassen(int* A, int* B, int n) {
 
 int main(int argc, char** argv) {
     int n = 9;
+    int og_n = n;
     int* A = initStart(n, ONE_RING);
     int* B = initStart(n, ONE_RING);
-    int* C;
+    int* C = initStart(n, ZERO);
 
     int new_size = getNearest(n);
     expandToNearest(&A, n, new_size);
@@ -488,6 +489,7 @@ int main(int argc, char** argv) {
         split(A, n, &A11, &A12, &A21, &A22);
         split(B, n, &B11, &B12, &B21, &B22);
 
+        // goto End;
 
         // NOTE: 
         // ----- Strassen main --------------------
@@ -560,7 +562,46 @@ int main(int argc, char** argv) {
 
         // -------- Merge --------------
         //printf("Merging! ");
-        mergeBase(C11, C12, C21, C22, C, n);
+        
+        // NOTE:
+        
+        printf("C11 "); print(C11, n/2);
+        printf("C12 "); print(C12, n/2);
+        printf("C21 "); print(C21, n/2);
+        printf("C22 "); print(C22, n/2);
+
+        //mergeBase(C11, C12, C21, C22, C, n);
+
+            int i, j;
+            int k11 = 0, k12 = 0, k21 = 0, k22 = 0;
+            int quadrant;
+            
+            for (i = 0; i < n; i++) {
+                for (j = 0; j < n; j++) {
+
+
+                    quadrant = getQuad(i, j, n);
+
+                    switch(quadrant) {
+                      case TOP_LEFT:
+                        C[i*n + j] = C11[k11];
+                        k11++;
+                        break;
+                      case TOP_RIGHT:
+                        C[i*n + j] = C12[k12];
+                        k12++;
+                        break;
+                      case BOTTOM_LEFT:
+                        C[i*n + j] = C21[k21];
+                        k21++;
+                        break;
+                      case BOTTOM_RIGHT:
+                        C[i*n + j] = C22[k22];
+                        k22++;
+                        break;
+                    }
+                }
+            }
 
         //printf("C "); print(C, n);
 
@@ -587,6 +628,7 @@ int main(int argc, char** argv) {
     
     
 End:
+    n = og_n;
     // ------ END MPI --------------------------------    
     
 
